@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>割合の暗算トレーニング</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: #F7F6F2;
+  color: #1a1a1a;
+  min-height: 100vh;
+  padding: 16px;
+}
+.container { max-width: 600px; margin: 0 auto; }
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid #E0DED8;
+  margin-bottom: 20px;
+}
+.app-title { font-size: 17px; font-weight: 700; color: #1a1a1a; letter-spacing: 0.03em; }
+.stock-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: #FFF3E0; color: #E65100;
+  font-size: 13px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid #FFCC80;
+  cursor: pointer; transition: background 0.15s;
+}
+.stock-badge:hover { background: #FFE0B2; }
+.stock-dot { width: 8px; height: 8px; background: #E65100; border-radius: 50%; }
+.sync-status {
+  font-size: 11px; color: #999; text-align: right;
+  margin-bottom: 12px; min-height: 16px;
+}
+.sync-status.ok  { color: #4CAF50; }
+.sync-status.err { color: #E53935; }
+.mode-screen { padding: 8px 0; }
+.mode-label { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.08em; margin-bottom: 12px; }
+.mode-card {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 14px;
+  padding: 18px 20px; margin-bottom: 10px; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  display: flex; align-items: center; gap: 14px;
+}
+.mode-card:hover { border-color: #4A90D9; box-shadow: 0 2px 8px rgba(74,144,217,0.12); }
+.mode-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.mode-icon.normal { background: #E8F4FD; }
+.mode-icon.review { background: #FFF3E0; }
+.mode-info { flex: 1; }
+.mode-name { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+.mode-desc { font-size: 13px; color: #666; line-height: 1.5; }
+.mode-card.disabled { opacity: 0.4; cursor: default; }
+.mode-card.disabled:hover { border-color: #E0DED8; box-shadow: none; }
+.empty-hint { font-size: 13px; color: #999; text-align: center; padding: 8px 0 0; }
+.progress-wrap { margin-bottom: 16px; }
+.progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.progress-mode { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.06em; }
+.progress-count { font-size: 13px; color: #555; }
+.progress-bar { height: 5px; background: #E0DED8; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: #4A90D9; border-radius: 3px; transition: width 0.3s ease; }
+.progress-fill.review { background: #E65100; }
+.question-card {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 16px;
+  padding: 24px 20px; margin-bottom: 12px; text-align: center;
+}
+.level-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #EEF2FF; color: #3730A3;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
+}
+.question-text { font-size: 22px; line-height: 1.7; color: #1a1a1a; font-weight: 600; }
+.answer-reveal-box {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 16px;
+  padding: 20px; margin-bottom: 12px;
+}
+.answer-row {
+  display: flex; align-items: baseline; justify-content: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.answer-label { font-size: 13px; color: #888; font-weight: 600; }
+.answer-value { font-size: 32px; font-weight: 800; color: #1a1a1a; }
+.hint-box {
+  background: #F5F9FE; border: 1px solid #D6E8FB; border-radius: 12px;
+  padding: 14px 16px; font-size: 14px; line-height: 1.8; color: #2C4A6E;
+}
+.hint-label { font-size: 12px; font-weight: 700; color: #4A90D9; margin-bottom: 6px; letter-spacing: 0.06em; }
+.choices { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.choice-btn {
+  background: #fff; border: 1.5px solid #D8D6D0;
+  border-radius: 12px; padding: 13px 16px;
+  font-size: 16px; color: #1a1a1a;
+  text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+.choice-btn:hover:not(:disabled) { border-color: #4A90D9; background: #F5F9FE; }
+.choice-btn:disabled { cursor: default; }
+.choice-btn.correct { background: #F0FAF0; border-color: #4CAF50; color: #1B5E20; }
+.choice-btn.wrong   { background: #FFF0F0; border-color: #E53935; color: #7F0000; }
+.self-check-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.self-check-btn {
+  flex: 1; border-radius: 12px; padding: 16px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; border: 1.5px solid; transition: background 0.15s;
+}
+.self-check-btn.ok {
+  background: #F0FAF0; border-color: #A5D6A7; color: #1B5E20;
+}
+.self-check-btn.ok:hover { background: #E2F5E2; }
+.self-check-btn.ng {
+  background: #FFF0F0; border-color: #FFCDD2; color: #7F0000;
+}
+.self-check-btn.ng:hover { background: #FFE2E2; }
+.result-box {
+  border-radius: 12px; padding: 16px 18px; margin-bottom: 12px;
+  font-size: 14px; line-height: 1.9;
+}
+.result-box.correct-box { background: #F0FAF0; border: 1px solid #A5D6A7; color: #1B5E20; }
+.result-box.wrong-box   { background: #FFF0F0; border: 1px solid #FFCDD2; color: #7F0000; }
+.result-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.action-row { display: flex; flex-direction: column; gap: 8px; }
+.btn-primary {
+  background: #1a1a1a; color: #fff;
+  border: none; border-radius: 12px;
+  padding: 14px; font-size: 15px; font-weight: 600;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #333; }
+.btn-secondary {
+  background: #fff; color: #1a1a1a;
+  border: 1.5px solid #D8D6D0; border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 500;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { background: #F5F4F0; border-color: #B0AEA8; }
+.btn-stock {
+  background: #FFF3E0; color: #E65100;
+  border: 1.5px solid #FFCC80; border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-stock:hover { background: #FFE0B2; }
+.btn-unstock {
+  background: #F5F4F0; color: #888;
+  border: 1.5px solid #D8D6D0; border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 500;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-unstock:hover { background: #E8E6E0; }
+.score-screen {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 16px;
+  padding: 32px 24px; text-align: center; margin-bottom: 16px;
+}
+.score-number { font-size: 56px; font-weight: 800; color: #1a1a1a; line-height: 1; }
+.score-denom  { font-size: 20px; color: #999; margin-bottom: 6px; }
+.score-msg    { font-size: 16px; color: #444; margin-bottom: 24px; }
+.score-sub-title { font-size: 13px; font-weight: 700; color: #888; letter-spacing: 0.06em; margin-bottom: 12px; text-align: left; }
+.stock-list-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #F9F8F5; border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 8px; font-size: 14px;
+}
+.stock-item-q { color: #555; font-size: 13px; flex: 1; padding-right: 10px; }
+.btn-remove-stock {
+  background: none; border: 1px solid #D8D6D0; border-radius: 8px;
+  padding: 4px 10px; font-size: 12px; color: #888; cursor: pointer;
+  font-family: inherit; flex-shrink: 0;
+}
+.btn-remove-stock:hover { background: #F0EEE8; color: #555; }
+.empty-stock { text-align: center; color: #aaa; font-size: 14px; padding: 16px 0; }
+.loading-screen { text-align: center; padding: 60px 20px; color: #888; font-size: 15px; }
+.spinner {
+  display: inline-block; width: 24px; height: 24px;
+  border: 2px solid #E0DED8; border-top-color: #4A90D9;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-header">
+    <span class="app-title">割合の暗算トレーニング</span>
+    <div class="stock-badge" onclick="goHome()" id="stockBadge">
+      <span class="stock-dot"></span>
+      <span id="stockCount">0</span>問 ストック中
+    </div>
+  </div>
+  <div id="syncStatus" class="sync-status"></div>
+  <div id="root"></div>
+</div>
+
+<script>
+// ============================================================
+// GAS エンドポイント & 教科別キー
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby57apuF3WgTYIZqupha2vUhpXvJJhJhQL2zMUbwiBBiLAf6xKVM6ZVbNhfRE_ZMrR3/exec?key=sansuu_wariai';
+
+// ============================================================
+// 問題データ（問題を追加するときはここに足していく）
+// ============================================================
+const ALL_QUESTIONS = [
+  { id:"set01_q1", question:"50gの水溶液で、濃度が40%のとき、ふくまれている物質は何gですか。", answer:"20g", hint:"40%は「100gの中に40g入っている」という意味。50gは100gの半分だから、入っている量も半分。40の半分は20。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set01_q2", question:"120gの10%は何gですか。", answer:"12g", hint:"10%は「10分の1」のこと。120を10こに分けると、1こぶんは12。→「10%=10分の1」と覚えておくと、120÷10=12とすぐ出せる。", level:1 },
+  { id:"set01_q3", question:"50gの水溶液で、濃度が60%のとき、ふくまれている物質は何gですか。", answer:"30g", hint:"60%は「100gの中に60g入っている」という意味。50gは100gの半分だから、入っている量も半分。60の半分は30。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set01_q4", question:"20gの30%は何gですか。", answer:"6g", hint:"30%は「10%の3倍」。20の10%(10分の1)は2。それを3倍して6。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set01_q5", question:"320gの20%は何gですか。", answer:"64g", hint:"20%=5分の1。320を5こに分けると1こぶんは64。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set02_q1", question:"100gの水溶液で、濃度が80%のとき、ふくまれている物質は何gですか。", answer:"80g", hint:"80%は「100gの中に80g入っている」という意味。100gなのでそのまま使える。100gの中に80g入っているから、答えは80g。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set02_q2", question:"500gの25%は何gですか。", answer:"125g", hint:"25%は「4分の1」のこと。500を4こに分けると、1こぶんは125。→「25%=4分の1」と覚えておくと、500÷4=125とすぐ出せる。", level:1 },
+  { id:"set02_q3", question:"50gの水溶液で、濃度が25%のとき、ふくまれている物質は何gですか。", answer:"12.5g", hint:"25%は「100gの中に25g入っている」という意味。50gは100gの半分だから、入っている量も半分。25の半分は12.5。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set02_q4", question:"80gの25%は何gですか。", answer:"20g", hint:"25%=4分の1。80を4こに分けると1こぶんは20。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set02_q5", question:"ある量の20%が10gでした。全体は何gですか。", answer:"50g", hint:"20%=5分の1なので、10gが「5こに分けた1こぶん」。全体は10×5=50g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set03_q1", question:"400gの10%は何gですか。", answer:"40g", hint:"10%は「10分の1」のこと。400を10こに分けると、1こぶんは40。→「10%=10分の1」と覚えておくと、400÷10=40とすぐ出せる。", level:1 },
+  { id:"set03_q2", question:"360gの25%は何gですか。", answer:"90g", hint:"25%は「4分の1」のこと。360を4こに分けると、1こぶんは90。→「25%=4分の1」と覚えておくと、360÷4=90とすぐ出せる。", level:1 },
+  { id:"set03_q3", question:"200gの水溶液で、濃度が80%のとき、ふくまれている物質は何gですか。", answer:"160g", hint:"80%は「100gの中に80g入っている」という意味。200gは100gの2倍だから、入っている量も2倍。80の2倍は160。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set03_q4", question:"20gの70%は何gですか。", answer:"14g", hint:"70%は「10%の7倍」。20の10%(10分の1)は2。それを7倍して14。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set03_q5", question:"ある量の25%が18gでした。全体は何gですか。", answer:"72g", hint:"25%=4分の1なので、18gが「4こに分けた1こぶん」。全体は18×4=72g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set04_q1", question:"150gの水溶液で、濃度が38%のとき、ふくまれている物質は何gですか。", answer:"57g", hint:"38%は「100gの中に38g入っている」という意味。150gは100gの1.5倍だから、入っている量も1.5倍。38の1.5倍は57。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set04_q2", question:"50gの水溶液で、濃度が38%のとき、ふくまれている物質は何gですか。", answer:"19g", hint:"38%は「100gの中に38g入っている」という意味。50gは100gの半分だから、入っている量も半分。38の半分は19。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set04_q3", question:"200gの水溶液で、濃度が40%のとき、ふくまれている物質は何gですか。", answer:"80g", hint:"40%は「100gの中に40g入っている」という意味。200gは100gの2倍だから、入っている量も2倍。40の2倍は80。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set04_q4", question:"200gの25%は何gですか。", answer:"50g", hint:"25%=4分の1。200を4こに分けると1こぶんは50。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set04_q5", question:"25gの水溶液に、5gの食塩がふくまれています。これは何%ですか。", answer:"20%", hint:"25gを100gにするには4倍。食塩も4倍して20g→20%。または、5gは25gの5分の1なので、5分の1=パーセントに変換すると20%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set05_q1", question:"100gの水溶液で、濃度が25%のとき、ふくまれている物質は何gですか。", answer:"25g", hint:"25%は「100gの中に25g入っている」という意味。100gなのでそのまま使える。100gの中に25g入っているから、答えは25g。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set05_q2", question:"280gの20%は何gですか。", answer:"56g", hint:"20%は「5分の1」のこと。280を5こに分けると、1こぶんは56。→「20%=5分の1」と覚えておくと、280÷5=56とすぐ出せる。", level:1 },
+  { id:"set05_q3", question:"150gの水溶液で、濃度が60%のとき、ふくまれている物質は何gですか。", answer:"90g", hint:"60%は「100gの中に60g入っている」という意味。150gは100gの1.5倍だから、入っている量も1.5倍。60の1.5倍は90。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set05_q4", question:"25gの水溶液に、6gの食塩がふくまれています。これは何%ですか。", answer:"24%", hint:"25gを100gにするには4倍。食塩も4倍して24g→24%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set05_q5", question:"40gの80%は何gですか。", answer:"32g", hint:"80%は「10%の8倍」。40の10%(10分の1)は4。それを8倍して32。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set06_q1", question:"500gの20%は何gですか。", answer:"100g", hint:"20%は「5分の1」のこと。500を5こに分けると、1こぶんは100。→「20%=5分の1」と覚えておくと、500÷5=100とすぐ出せる。", level:1 },
+  { id:"set06_q2", question:"240gの25%は何gですか。", answer:"60g", hint:"25%は「4分の1」のこと。240を4こに分けると、1こぶんは60。→「25%=4分の1」と覚えておくと、240÷4=60とすぐ出せる。", level:1 },
+  { id:"set06_q3", question:"200gの水溶液で、濃度が60%のとき、ふくまれている物質は何gですか。", answer:"120g", hint:"60%は「100gの中に60g入っている」という意味。200gは100gの2倍だから、入っている量も2倍。60の2倍は120。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set06_q4", question:"25gの水溶液に、8gの食塩がふくまれています。これは何%ですか。", answer:"32%", hint:"25gを100gにするには4倍。食塩も4倍して32g→32%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set06_q5", question:"20gの90%は何gですか。", answer:"18g", hint:"90%は「10%の9倍」。20の10%(10分の1)は2。それを9倍して18。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set07_q1", question:"100gの20%は何gですか。", answer:"20g", hint:"20%は「5分の1」のこと。100を5こに分けると、1こぶんは20。→「20%=5分の1」と覚えておくと、100÷5=20とすぐ出せる。", level:1 },
+  { id:"set07_q2", question:"200gの水溶液で、濃度が20%のとき、ふくまれている物質は何gですか。", answer:"40g", hint:"20%は「100gの中に20g入っている」という意味。200gは100gの2倍だから、入っている量も2倍。20の2倍は40。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set07_q3", question:"1000gの50%は何gですか。", answer:"500g", hint:"50%は「2分の1」のこと。1000を2こに分けると、1こぶんは500。→「50%=2分の1」と覚えておくと、1000÷2=500とすぐ出せる。", level:1 },
+  { id:"set07_q4", question:"20gの水溶液に、2gの食塩がふくまれています。これは何%ですか。", answer:"10%", hint:"20gを100gにするには5倍。食塩も5倍して10g→10%。または、2gは20gの10分の1なので、10分の1=パーセントに変換すると10%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set07_q5", question:"160gの75%は何gですか。", answer:"120g", hint:"75%=4分の3。160を4こに分けると1こぶんは40。その3こぶんで120。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set08_q1", question:"150gの水溶液で、濃度が20%のとき、ふくまれている物質は何gですか。", answer:"30g", hint:"20%は「100gの中に20g入っている」という意味。150gは100gの1.5倍だから、入っている量も1.5倍。20の1.5倍は30。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set08_q2", question:"160gの50%は何gですか。", answer:"80g", hint:"50%は「2分の1」のこと。160を2こに分けると、1こぶんは80。→「50%=2分の1」と覚えておくと、160÷2=80とすぐ出せる。", level:1 },
+  { id:"set08_q3", question:"160gの10%は何gですか。", answer:"16g", hint:"10%は「10分の1」のこと。160を10こに分けると、1こぶんは16。→「10%=10分の1」と覚えておくと、160÷10=16とすぐ出せる。", level:1 },
+  { id:"set08_q4", question:"25gの水溶液に、1gの食塩がふくまれています。これは何%ですか。", answer:"4%", hint:"25gを100gにするには4倍。食塩も4倍して4g→4%。または、1gは25gの25分の1なので、25分の1=パーセントに変換すると4%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set08_q5", question:"ある量の20%が16gでした。全体は何gですか。", answer:"80g", hint:"20%=5分の1なので、16gが「5こに分けた1こぶん」。全体は16×5=80g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set09_q1", question:"50gの水溶液で、濃度が75%のとき、ふくまれている物質は何gですか。", answer:"37.5g", hint:"75%は「100gの中に75g入っている」という意味。50gは100gの半分だから、入っている量も半分。75の半分は37.5。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set09_q2", question:"100gの水溶液で、濃度が40%のとき、ふくまれている物質は何gですか。", answer:"40g", hint:"40%は「100gの中に40g入っている」という意味。100gなのでそのまま使える。100gの中に40g入っているから、答えは40g。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set09_q3", question:"200gの水溶液で、濃度が38%のとき、ふくまれている物質は何gですか。", answer:"76g", hint:"38%は「100gの中に38g入っている」という意味。200gは100gの2倍だから、入っている量も2倍。38の2倍は76。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set09_q4", question:"ある量の25%が12gでした。全体は何gですか。", answer:"48g", hint:"25%=4分の1なので、12gが「4こに分けた1こぶん」。全体は12×4=48g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set09_q5", question:"50gの水溶液に、8gの食塩がふくまれています。これは何%ですか。", answer:"16%", hint:"50gを100gにするには2倍。食塩も2倍して16g→16%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set10_q1", question:"240gの10%は何gですか。", answer:"24g", hint:"10%は「10分の1」のこと。240を10こに分けると、1こぶんは24。→「10%=10分の1」と覚えておくと、240÷10=24とすぐ出せる。", level:1 },
+  { id:"set10_q2", question:"900gの20%は何gですか。", answer:"180g", hint:"20%は「5分の1」のこと。900を5こに分けると、1こぶんは180。→「20%=5分の1」と覚えておくと、900÷5=180とすぐ出せる。", level:1 },
+  { id:"set10_q3", question:"50gの水溶液で、濃度が20%のとき、ふくまれている物質は何gですか。", answer:"10g", hint:"20%は「100gの中に20g入っている」という意味。50gは100gの半分だから、入っている量も半分。20の半分は10。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set10_q4", question:"20gの20%は何gですか。", answer:"4g", hint:"20%は「10%の2倍」。20の10%(10分の1)は2。それを2倍して4。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set10_q5", question:"60gの25%は何gですか。", answer:"15g", hint:"25%=4分の1。60を4こに分けると1こぶんは15。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set11_q1", question:"150gの水溶液で、濃度が75%のとき、ふくまれている物質は何gですか。", answer:"112.5g", hint:"75%は「100gの中に75g入っている」という意味。150gは100gの1.5倍だから、入っている量も1.5倍。75の1.5倍は112.5。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set11_q2", question:"120gの50%は何gですか。", answer:"60g", hint:"50%は「2分の1」のこと。120を2こに分けると、1こぶんは60。→「50%=2分の1」と覚えておくと、120÷2=60とすぐ出せる。", level:1 },
+  { id:"set11_q3", question:"600gの50%は何gですか。", answer:"300g", hint:"50%は「2分の1」のこと。600を2こに分けると、1こぶんは300。→「50%=2分の1」と覚えておくと、600÷2=300とすぐ出せる。", level:1 },
+  { id:"set11_q4", question:"ある量の10%が18gでした。全体は何gですか。", answer:"180g", hint:"10%=10分の1なので、18gが「10こに分けた1こぶん」。全体は18×10=180g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set11_q5", question:"70gの40%は何gですか。", answer:"28g", hint:"40%は「10%の4倍」。70の10%(10分の1)は7。それを4倍して28。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set12_q1", question:"500gの10%は何gですか。", answer:"50g", hint:"10%は「10分の1」のこと。500を10こに分けると、1こぶんは50。→「10%=10分の1」と覚えておくと、500÷10=50とすぐ出せる。", level:1 },
+  { id:"set12_q2", question:"50gの水溶液で、濃度が10%のとき、ふくまれている物質は何gですか。", answer:"5g", hint:"10%は「100gの中に10g入っている」という意味。50gは100gの半分だから、入っている量も半分。10の半分は5。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set12_q3", question:"320gの10%は何gですか。", answer:"32g", hint:"10%は「10分の1」のこと。320を10こに分けると、1こぶんは32。→「10%=10分の1」と覚えておくと、320÷10=32とすぐ出せる。", level:1 },
+  { id:"set12_q4", question:"ある量の20%が15gでした。全体は何gですか。", answer:"75g", hint:"20%=5分の1なので、15gが「5こに分けた1こぶん」。全体は15×5=75g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set12_q5", question:"80gの30%は何gですか。", answer:"24g", hint:"30%は「10%の3倍」。80の10%(10分の1)は8。それを3倍して24。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set13_q1", question:"280gの50%は何gですか。", answer:"140g", hint:"50%は「2分の1」のこと。280を2こに分けると、1こぶんは140。→「50%=2分の1」と覚えておくと、280÷2=140とすぐ出せる。", level:1 },
+  { id:"set13_q2", question:"80gの50%は何gですか。", answer:"40g", hint:"50%は「2分の1」のこと。80を2こに分けると、1こぶんは40。→「50%=2分の1」と覚えておくと、80÷2=40とすぐ出せる。", level:1 },
+  { id:"set13_q3", question:"600gの20%は何gですか。", answer:"120g", hint:"20%は「5分の1」のこと。600を5こに分けると、1こぶんは120。→「20%=5分の1」と覚えておくと、600÷5=120とすぐ出せる。", level:1 },
+  { id:"set13_q4", question:"240gの20%は何gですか。", answer:"48g", hint:"20%=5分の1。240を5こに分けると1こぶんは48。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set13_q5", question:"10gの60%は何gですか。", answer:"6g", hint:"60%は「10%の6倍」。10の10%(10分の1)は1。それを6倍して6。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set14_q1", question:"800gの50%は何gですか。", answer:"400g", hint:"50%は「2分の1」のこと。800を2こに分けると、1こぶんは400。→「50%=2分の1」と覚えておくと、800÷2=400とすぐ出せる。", level:1 },
+  { id:"set14_q2", question:"300gの20%は何gですか。", answer:"60g", hint:"20%は「5分の1」のこと。300を5こに分けると、1こぶんは60。→「20%=5分の1」と覚えておくと、300÷5=60とすぐ出せる。", level:1 },
+  { id:"set14_q3", question:"50gの水溶液で、濃度が50%のとき、ふくまれている物質は何gですか。", answer:"25g", hint:"50%は「100gの中に50g入っている」という意味。50gは100gの半分だから、入っている量も半分。50の半分は25。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set14_q4", question:"100gの60%は何gですか。", answer:"60g", hint:"60%は「10%の6倍」。100の10%(10分の1)は10。それを6倍して60。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set14_q5", question:"320gの75%は何gですか。", answer:"240g", hint:"75%=4分の3。320を4こに分けると1こぶんは80。その3こぶんで240。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set15_q1", question:"640gの10%は何gですか。", answer:"64g", hint:"10%は「10分の1」のこと。640を10こに分けると、1こぶんは64。→「10%=10分の1」と覚えておくと、640÷10=64とすぐ出せる。", level:1 },
+  { id:"set15_q2", question:"100gの水溶液で、濃度が60%のとき、ふくまれている物質は何gですか。", answer:"60g", hint:"60%は「100gの中に60g入っている」という意味。100gなのでそのまま使える。100gの中に60g入っているから、答えは60g。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set15_q3", question:"900gの25%は何gですか。", answer:"225g", hint:"25%は「4分の1」のこと。900を4こに分けると、1こぶんは225。→「25%=4分の1」と覚えておくと、900÷4=225とすぐ出せる。", level:1 },
+  { id:"set15_q4", question:"50gの水溶液に、3gの食塩がふくまれています。これは何%ですか。", answer:"6%", hint:"50gを100gにするには2倍。食塩も2倍して6g→6%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set15_q5", question:"50gの60%は何gですか。", answer:"30g", hint:"60%は「10%の6倍」。50の10%(10分の1)は5。それを6倍して30。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set16_q1", question:"80gの10%は何gですか。", answer:"8g", hint:"10%は「10分の1」のこと。80を10こに分けると、1こぶんは8。→「10%=10分の1」と覚えておくと、80÷10=8とすぐ出せる。", level:1 },
+  { id:"set16_q2", question:"900gの10%は何gですか。", answer:"90g", hint:"10%は「10分の1」のこと。900を10こに分けると、1こぶんは90。→「10%=10分の1」と覚えておくと、900÷10=90とすぐ出せる。", level:1 },
+  { id:"set16_q3", question:"360gの10%は何gですか。", answer:"36g", hint:"10%は「10分の1」のこと。360を10こに分けると、1こぶんは36。→「10%=10分の1」と覚えておくと、360÷10=36とすぐ出せる。", level:1 },
+  { id:"set16_q4", question:"ある量の25%が7gでした。全体は何gですか。", answer:"28g", hint:"25%=4分の1なので、7gが「4こに分けた1こぶん」。全体は7×4=28g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set16_q5", question:"320gの50%は何gですか。", answer:"160g", hint:"50%=2分の1。320を2こに分けると1こぶんは160。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set17_q1", question:"50gの水溶液で、濃度が80%のとき、ふくまれている物質は何gですか。", answer:"40g", hint:"80%は「100gの中に80g入っている」という意味。50gは100gの半分だから、入っている量も半分。80の半分は40。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set17_q2", question:"1000gの20%は何gですか。", answer:"200g", hint:"20%は「5分の1」のこと。1000を5こに分けると、1こぶんは200。→「20%=5分の1」と覚えておくと、1000÷5=200とすぐ出せる。", level:1 },
+  { id:"set17_q3", question:"150gの水溶液で、濃度が10%のとき、ふくまれている物質は何gですか。", answer:"15g", hint:"10%は「100gの中に10g入っている」という意味。150gは100gの1.5倍だから、入っている量も1.5倍。10の1.5倍は15。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set17_q4", question:"70gの90%は何gですか。", answer:"63g", hint:"90%は「10%の9倍」。70の10%(10分の1)は7。それを9倍して63。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set17_q5", question:"20gの水溶液に、1gの食塩がふくまれています。これは何%ですか。", answer:"5%", hint:"20gを100gにするには5倍。食塩も5倍して5g→5%。または、1gは20gの20分の1なので、20分の1=パーセントに変換すると5%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set18_q1", question:"120gの25%は何gですか。", answer:"30g", hint:"25%は「4分の1」のこと。120を4こに分けると、1こぶんは30。→「25%=4分の1」と覚えておくと、120÷4=30とすぐ出せる。", level:1 },
+  { id:"set18_q2", question:"500gの50%は何gですか。", answer:"250g", hint:"50%は「2分の1」のこと。500を2こに分けると、1こぶんは250。→「50%=2分の1」と覚えておくと、500÷2=250とすぐ出せる。", level:1 },
+  { id:"set18_q3", question:"360gの20%は何gですか。", answer:"72g", hint:"20%は「5分の1」のこと。360を5こに分けると、1こぶんは72。→「20%=5分の1」と覚えておくと、360÷5=72とすぐ出せる。", level:1 },
+  { id:"set18_q4", question:"40gの25%は何gですか。", answer:"10g", hint:"25%=4分の1。40を4こに分けると1こぶんは10。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set18_q5", question:"60gの30%は何gですか。", answer:"18g", hint:"30%は「10%の3倍」。60の10%(10分の1)は6。それを3倍して18。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+  { id:"set19_q1", question:"200gの水溶液で、濃度が25%のとき、ふくまれている物質は何gですか。", answer:"50g", hint:"25%は「100gの中に25g入っている」という意味。200gは100gの2倍だから、入っている量も2倍。25の2倍は50。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set19_q2", question:"100gの50%は何gですか。", answer:"50g", hint:"50%は「2分の1」のこと。100を2こに分けると、1こぶんは50。→「50%=2分の1」と覚えておくと、100÷2=50とすぐ出せる。", level:1 },
+  { id:"set19_q3", question:"200gの50%は何gですか。", answer:"100g", hint:"50%は「2分の1」のこと。200を2こに分けると、1こぶんは100。→「50%=2分の1」と覚えておくと、200÷2=100とすぐ出せる。", level:1 },
+  { id:"set19_q4", question:"20gの水溶液に、5gの食塩がふくまれています。これは何%ですか。", answer:"25%", hint:"20gを100gにするには5倍。食塩も5倍して25g→25%。または、5gは20gの4分の1なので、4分の1=パーセントに変換すると25%。→「100gあたり」から逆に、与えられた量から%を求める方向。", level:2 },
+  { id:"set19_q5", question:"ある量の50%が18gでした。全体は何gですか。", answer:"36g", hint:"50%=2分の1なので、18gが「2こに分けた1こぶん」。全体は18×2=36g。→「比べられる量→もとにする量」を、わり算ではなく「○こ分」のイメージで逆にたどる。", level:2 },
+  { id:"set20_q1", question:"480gの25%は何gですか。", answer:"120g", hint:"25%は「4分の1」のこと。480を4こに分けると、1こぶんは120。→「25%=4分の1」と覚えておくと、480÷4=120とすぐ出せる。", level:1 },
+  { id:"set20_q2", question:"480gの10%は何gですか。", answer:"48g", hint:"10%は「10分の1」のこと。480を10こに分けると、1こぶんは48。→「10%=10分の1」と覚えておくと、480÷10=48とすぐ出せる。", level:1 },
+  { id:"set20_q3", question:"100gの水溶液で、濃度が50%のとき、ふくまれている物質は何gですか。", answer:"50g", hint:"50%は「100gの中に50g入っている」という意味。100gなのでそのまま使える。100gの中に50g入っているから、答えは50g。→「100gあたり○g」をまず考えて、それを半分・倍などに調整する。", level:1 },
+  { id:"set20_q4", question:"400gの25%は何gですか。", answer:"100g", hint:"25%=4分の1。400を4こに分けると1こぶんは100。→「25%=4分の1」「50%=2分の1」「75%=4分の3」など、よく出る変換を使う。", level:2 },
+  { id:"set20_q5", question:"20gの80%は何gですか。", answer:"16g", hint:"80%は「10%の8倍」。20の10%(10分の1)は2。それを8倍して16。→「10%の○倍」という発想で、複雑な%も10%を土台に組み立てる。", level:2 },
+];
+
+// ============================================================
+// ストック管理（GAS と同期、教科別キーで保存）
+// ============================================================
+let stockedIds = new Set();
+
+function setSyncStatus(msg, type) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.className = 'sync-status' + (type ? ' ' + type : '');
+}
+
+async function loadStock() {
+  try {
+    setSyncStatus('ストックを読み込み中…');
+    const res = await fetch(GAS_URL + '&action=load');
+    const text = await res.text();
+    const arr = JSON.parse(text);
+    stockedIds = new Set(Array.isArray(arr) ? arr : []);
+    setSyncStatus('✓ ストックを読み込みました', 'ok');
+    document.getElementById('stockCount').textContent = stockedIds.size;
+    setTimeout(() => setSyncStatus(''), 2000);
+  } catch(e) {
+    setSyncStatus('ストックの読み込みに失敗しました（オフライン？）', 'err');
+    stockedIds = new Set();
+  }
+}
+
+async function saveStock() {
+  document.getElementById('stockCount').textContent = stockedIds.size;
+  try {
+    const data = JSON.stringify([...stockedIds]);
+    await fetch(GAS_URL + '&action=save&data=' + encodeURIComponent(data));
+    setSyncStatus('✓ ストックを保存しました', 'ok');
+    setTimeout(() => setSyncStatus(''), 2000);
+  } catch(e) {
+    setSyncStatus('保存に失敗しました（オフライン？）', 'err');
+  }
+}
+
+// ============================================================
+// クイズ本体
+// ============================================================
+const TOTAL = 5;
+let mode = 'home';
+let questions = [];
+let current = 0;
+let score = 0;
+let answered = false;
+let revealed = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function render(html) { document.getElementById('root').innerHTML = html; }
+
+function goHome() { mode = 'home'; renderHome(); }
+
+function renderHome() {
+  const stockCount = stockedIds.size;
+  const disabledClass = stockCount === 0 ? 'disabled' : '';
+  const disabledAttr  = stockCount === 0 ? '' : 'onclick="startReview()"';
+  render(`
+    <div class="mode-screen">
+      <div class="mode-label">モードをえらぶ</div>
+      <div class="mode-card" onclick="startNormal()">
+        <div class="mode-icon normal">🧮</div>
+        <div class="mode-info">
+          <div class="mode-name">通常モード</div>
+          <div class="mode-desc">問題からランダムに5問出題します</div>
+        </div>
+      </div>
+      <div class="mode-card ${disabledClass}" ${disabledAttr}>
+        <div class="mode-icon review">📌</div>
+        <div class="mode-info">
+          <div class="mode-name">復習モード</div>
+          <div class="mode-desc">ストックした問題（${stockCount}問）を練習します</div>
+        </div>
+      </div>
+      ${stockCount === 0 ? '<p class="empty-hint">まちがえた問題や「もう一度やりたい」問題がここに集まります</p>' : ''}
+    </div>
+  `);
+}
+
+function startNormal() {
+  mode = 'normal';
+  questions = shuffle(ALL_QUESTIONS).slice(0, TOTAL);
+  current = 0; score = 0; answered = false;
+  renderQuestion();
+}
+
+function startReview() {
+  mode = 'review';
+  const stockedQs = ALL_QUESTIONS.filter(q => stockedIds.has(q.id));
+  questions = shuffle(stockedQs).slice(0, Math.min(TOTAL, stockedQs.length));
+  current = 0; score = 0; answered = false;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  revealed = false;
+  const q = questions[current];
+  const pct = Math.round((current / questions.length) * 100);
+  const modeLabel = mode === 'review' ? '復習モード' : '通常モード';
+  const fillClass = mode === 'review' ? 'review' : '';
+  const levelLabel = q.level === 1 ? '基本' : 'ステップアップ';
+  render(`
+    <div class="progress-wrap">
+      <div class="progress-row">
+        <span class="progress-mode">${modeLabel}</span>
+        <span class="progress-count">${current+1} / ${questions.length}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${pct}%"></div></div>
+    </div>
+    <div class="question-card">
+      <span class="level-pill">${levelLabel}</span>
+      <p class="question-text">${q.question}</p>
+    </div>
+    <div id="result">
+      <button class="btn-primary" onclick="revealAnswer()">頭の中で答えを出したら、こたえを見る</button>
+    </div>
+  `);
+}
+
+function revealAnswer() {
+  if (revealed) return;
+  revealed = true;
+  const q = questions[current];
+  render(`
+    <div class="progress-wrap">
+      <div class="progress-row">
+        <span class="progress-mode">${mode === 'review' ? '復習モード' : '通常モード'}</span>
+        <span class="progress-count">${current+1} / ${questions.length}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${mode === 'review' ? 'review' : ''}" style="width:${Math.round((current / questions.length) * 100)}%"></div></div>
+    </div>
+    <div class="question-card">
+      <span class="level-pill">${q.level === 1 ? '基本' : 'ステップアップ'}</span>
+      <p class="question-text">${q.question}</p>
+    </div>
+    <div class="answer-reveal-box">
+      <div class="answer-row">
+        <span class="answer-label">答え</span>
+        <span class="answer-value">${q.answer}</span>
+      </div>
+      <div class="hint-box">
+        <div class="hint-label">考え方</div>
+        ${q.hint}
+      </div>
+    </div>
+    <div id="result">
+      <p style="text-align:center; font-size:14px; color:#888; margin-bottom:10px;">頭の中で出した答えと合っていましたか？</p>
+      <div class="self-check-row">
+        <button class="self-check-btn ok" onclick="selectAnswer(true)">⭕ 合ってた</button>
+        <button class="self-check-btn ng" onclick="selectAnswer(false)">❌ 間違えた</button>
+      </div>
+    </div>
+  `);
+}
+
+function selectAnswer(isCorrect) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  if (isCorrect) score++;
+
+  if (!isCorrect) { stockedIds.add(q.id); saveStock(); }
+
+  const isStocked = stockedIds.has(q.id);
+  const isLast = current === questions.length - 1;
+  const boxClass = isCorrect ? 'correct-box' : 'wrong-box';
+  const titleText = isCorrect ? '✓ よくできました！' : '✗ もう一度練習しよう';
+
+  const stockBtn = isStocked
+    ? `<button class="btn-unstock" onclick="toggleStock('${q.id}', false)">📌 ストックから外す</button>`
+    : `<button class="btn-stock"   onclick="toggleStock('${q.id}', true)">📌 もう一度やりたい（ストックに追加）</button>`;
+
+  document.getElementById('result').innerHTML = `
+    <div class="result-box ${boxClass}">
+      <div class="result-title">${titleText}</div>
+    </div>
+    <div class="action-row">
+      ${stockBtn}
+      <button class="btn-primary" onclick="${isLast ? 'showScore()' : 'nextQuestion()'}">${isLast ? '結果を見る' : `次の問題へ　(${current+2}/${questions.length})`}</button>
+    </div>
+  `;
+}
+
+function toggleStock(id, add) {
+  if (add) stockedIds.add(id); else stockedIds.delete(id);
+  saveStock();
+  const btn = document.querySelector('.btn-stock, .btn-unstock');
+  if (!btn) return;
+  if (add) {
+    btn.className = 'btn-unstock';
+    btn.textContent = '📌 ストックから外す';
+    btn.setAttribute('onclick', `toggleStock('${id}', false)`);
+  } else {
+    btn.className = 'btn-stock';
+    btn.textContent = '📌 もう一度やりたい（ストックに追加）';
+    btn.setAttribute('onclick', `toggleStock('${id}', true)`);
+  }
+}
+
+function nextQuestion() { current++; renderQuestion(); }
+
+function showScore() {
+  const pct = Math.round(score / questions.length * 100);
+  const msg = pct===100 ? 'かんぺき！全問正解！'
+    : pct>=80 ? 'すごい！よくできました！'
+    : pct>=60 ? 'がんばりました！あと少し！'
+    : 'また練習しよう！きっとできるよ！';
+
+  const stockedQs = ALL_QUESTIONS.filter(q => stockedIds.has(q.id));
+  const stockListHtml = stockedQs.length === 0
+    ? '<div class="empty-stock">ストックはありません</div>'
+    : stockedQs.map(q => `
+        <div class="stock-list-item">
+          <span class="stock-item-q">${q.question}</span>
+          <button class="btn-remove-stock" onclick="removeFromStock('${q.id}')">外す</button>
+        </div>`).join('');
+
+  render(`
+    <div class="score-screen">
+      <div class="score-number">${score}</div>
+      <div class="score-denom">/ ${questions.length}問正解</div>
+      <div class="score-msg">${msg}</div>
+      <div class="action-row">
+        ${stockedIds.size > 0 ? `<button class="btn-primary" onclick="startReview()">📌 ストックした問題を復習する（${stockedIds.size}問）</button>` : ''}
+        <button class="btn-secondary" onclick="startNormal()">通常モードで続ける</button>
+        <button class="btn-secondary" onclick="goHome()">トップにもどる</button>
+      </div>
+    </div>
+    <div>
+      <div class="score-sub-title">📌 ストック中の問題</div>
+      ${stockListHtml}
+    </div>
+  `);
+}
+
+function removeFromStock(id) {
+  stockedIds.delete(id);
+  saveStock();
+  showScore();
+}
+
+// 起動時にストックを読み込む
+render('<div class="loading-screen"><div class="spinner"></div><br>読み込み中…</div>');
+loadStock().then(() => renderHome());
+</script>
+</body>
+</html>
