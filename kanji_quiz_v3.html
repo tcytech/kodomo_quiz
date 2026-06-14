@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢字の意味ちがいクイズ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: #F7F6F2;
+  color: #1a1a1a;
+  min-height: 100vh;
+  padding: 16px;
+}
+.container { max-width: 600px; margin: 0 auto; }
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid #E0DED8;
+  margin-bottom: 20px;
+}
+.app-title { font-size: 17px; font-weight: 700; color: #1a1a1a; letter-spacing: 0.03em; }
+.stock-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: #FFF3E0; color: #E65100;
+  font-size: 13px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid #FFCC80;
+  cursor: pointer; transition: background 0.15s;
+}
+.stock-badge:hover { background: #FFE0B2; }
+.stock-dot { width: 8px; height: 8px; background: #E65100; border-radius: 50%; }
+.sync-status {
+  font-size: 11px; color: #999; text-align: right;
+  margin-bottom: 12px; min-height: 16px;
+}
+.sync-status.ok  { color: #4CAF50; }
+.sync-status.err { color: #E53935; }
+.mode-screen { padding: 8px 0; }
+.mode-label { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.08em; margin-bottom: 12px; }
+.mode-card {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 14px;
+  padding: 18px 20px; margin-bottom: 10px; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  display: flex; align-items: center; gap: 14px;
+}
+.mode-card:hover { border-color: #4A90D9; box-shadow: 0 2px 8px rgba(74,144,217,0.12); }
+.mode-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.mode-icon.normal { background: #E8F4FD; }
+.mode-icon.review { background: #FFF3E0; }
+.mode-info { flex: 1; }
+.mode-name { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+.mode-desc { font-size: 13px; color: #666; line-height: 1.5; }
+.mode-card.disabled { opacity: 0.4; cursor: default; }
+.mode-card.disabled:hover { border-color: #E0DED8; box-shadow: none; }
+.empty-hint { font-size: 13px; color: #999; text-align: center; padding: 8px 0 0; }
+.progress-wrap { margin-bottom: 16px; }
+.progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.progress-mode { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.06em; }
+.progress-count { font-size: 13px; color: #555; }
+.progress-bar { height: 5px; background: #E0DED8; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: #4A90D9; border-radius: 3px; transition: width 0.3s ease; }
+.progress-fill.review { background: #E65100; }
+.question-card {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 16px;
+  padding: 20px; margin-bottom: 12px;
+}
+.kanji-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #EEF2FF; color: #3730A3;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;
+}
+.question-text { font-size: 16px; line-height: 1.7; color: #1a1a1a; }
+.choices { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.choice-btn {
+  background: #fff; border: 1.5px solid #D8D6D0;
+  border-radius: 12px; padding: 13px 16px;
+  font-size: 16px; color: #1a1a1a;
+  text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+.choice-btn:hover:not(:disabled) { border-color: #4A90D9; background: #F5F9FE; }
+.choice-btn:disabled { cursor: default; }
+.choice-btn.correct { background: #F0FAF0; border-color: #4CAF50; color: #1B5E20; }
+.choice-btn.wrong   { background: #FFF0F0; border-color: #E53935; color: #7F0000; }
+.choice-btn.reveal  { background: #F0FAF0; border-color: #4CAF50; color: #1B5E20; }
+.choice-mark {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #F0EEE8; color: #555;
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.correct .choice-mark { background: #4CAF50; color: #fff; }
+.wrong   .choice-mark { background: #E53935; color: #fff; }
+.reveal  .choice-mark { background: #4CAF50; color: #fff; }
+.result-box {
+  border-radius: 12px; padding: 16px 18px; margin-bottom: 12px;
+  font-size: 14px; line-height: 1.9;
+}
+.result-box.correct-box { background: #F0FAF0; border: 1px solid #A5D6A7; color: #1B5E20; }
+.result-box.wrong-box   { background: #FFF0F0; border: 1px solid #FFCDD2; color: #7F0000; }
+.result-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.action-row { display: flex; flex-direction: column; gap: 8px; }
+.btn-primary {
+  background: #1a1a1a; color: #fff;
+  border: none; border-radius: 12px;
+  padding: 14px; font-size: 15px; font-weight: 600;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #333; }
+.btn-secondary {
+  background: #fff; color: #1a1a1a;
+  border: 1.5px solid #D8D6D0; border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 500;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { background: #F5F4F0; border-color: #B0AEA8; }
+.btn-stock {
+  background: #FFF3E0; color: #E65100;
+  border: 1.5px solid #FFCC80; border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-stock:hover { background: #FFE0B2; }
+.btn-unstock {
+  background: #F5F4F0; color: #888;
+  border: 1.5px solid #D8D6D0; border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 500;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-unstock:hover { background: #E8E6E0; }
+.score-screen {
+  background: #fff; border: 1px solid #E0DED8; border-radius: 16px;
+  padding: 32px 24px; text-align: center; margin-bottom: 16px;
+}
+.score-number { font-size: 56px; font-weight: 800; color: #1a1a1a; line-height: 1; }
+.score-denom  { font-size: 20px; color: #999; margin-bottom: 6px; }
+.score-msg    { font-size: 16px; color: #444; margin-bottom: 24px; }
+.score-sub-title { font-size: 13px; font-weight: 700; color: #888; letter-spacing: 0.06em; margin-bottom: 12px; text-align: left; }
+.stock-list-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #F9F8F5; border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 8px; font-size: 14px;
+}
+.stock-item-kanji { font-weight: 700; color: #3730A3; font-size: 16px; }
+.stock-item-words { color: #555; font-size: 13px; flex: 1; padding: 0 10px; }
+.btn-remove-stock {
+  background: none; border: 1px solid #D8D6D0; border-radius: 8px;
+  padding: 4px 10px; font-size: 12px; color: #888; cursor: pointer;
+  font-family: inherit;
+}
+.btn-remove-stock:hover { background: #F0EEE8; color: #555; }
+.empty-stock { text-align: center; color: #aaa; font-size: 14px; padding: 16px 0; }
+.loading-screen { text-align: center; padding: 60px 20px; color: #888; font-size: 15px; }
+.spinner {
+  display: inline-block; width: 24px; height: 24px;
+  border: 2px solid #E0DED8; border-top-color: #4A90D9;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-header">
+    <span class="app-title">漢字の意味ちがいクイズ</span>
+    <div class="stock-badge" onclick="goHome()" id="stockBadge">
+      <span class="stock-dot"></span>
+      <span id="stockCount">0</span>問 ストック中
+    </div>
+  </div>
+  <div id="syncStatus" class="sync-status"></div>
+  <div id="root"></div>
+</div>
+
+<script>
+// ============================================================
+// GAS エンドポイント（更新不要）
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby57apuF3WgTYIZqupha2vUhpXvJJhJhQL2zMUbwiBBiLAf6xKVM6ZVbNhfRE_ZMrR3/exec?key=kanji_quiz';
+
+// ============================================================
+// 問題データ（問題を追加するときはここに足していく）
+// ============================================================
+const ALL_QUESTIONS = [
+  {
+    id:"q001", kanji:"明",
+    question:"次のア〜エの熟語の中から、「明」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"明朝"},{label:"イ",word:"明快"},{label:"ウ",word:"明確"},{label:"エ",word:"明暗"}],
+    answer:"ア",
+    explanation:"「明」には、①「はっきりしている・わかりやすい」という意味と、②「次の〜・朝」という時間を表す意味があります。\nイ「明快」は話がすっきりわかりやすいこと（①）。ウ「明確」はまちがいなくはっきりしていること（①）。エ「明暗」は明るさと暗さのこと（①）。\nしかしア「明朝」は「明日の朝」という意味で、時間を表しています（②）。「明朝8時に集合！」のように使います。だからアだけ意味がちがいます。"
+  },
+  {
+    id:"q002", kanji:"転",
+    question:"次のア〜エの熟語の中から、「転」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"転落"},{label:"イ",word:"転校"},{label:"ウ",word:"転倒"},{label:"エ",word:"回転"}],
+    answer:"イ",
+    explanation:"「転」には、①「ひっくり返る・くるくる回る・落ちる」という動きの意味と、②「場所や状態が変わる・移る」という意味があります。\nア「転落」は落ちること（①）。ウ「転倒」はひっくり返って倒れること（①）。エ「回転」はくるくる回ること（①）。\nしかしイ「転校」は学校が変わること（②）。体や物が動くのではなく「場所が変わる」という意味なので、イだけちがいます。"
+  },
+  {
+    id:"q003", kanji:"心",
+    question:"次のア〜エの熟語の中から、「心」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"心配"},{label:"イ",word:"心境"},{label:"ウ",word:"中心"},{label:"エ",word:"心得"}],
+    answer:"ウ",
+    explanation:"「心」には、①「気持ち・心の中・思い」という見えないものを表す意味と、②「まん中・中央」という場所を表す意味があります。\nア「心配」は不安な気持ちのこと（①）。イ「心境」はそのときの気持ちや心の状態（①）。エ「心得」は心の中でしっかり知っておくこと（①）。\nしかしウ「中心」は円や物のまん中のこと（②）。気持ちとは関係なく場所を表しているので、ウだけちがいます。"
+  },
+  {
+    id:"q004", kanji:"気",
+    question:"次のア〜エの熟語の中から、「気」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"気分"},{label:"イ",word:"気持ち"},{label:"ウ",word:"気配"},{label:"エ",word:"電気"}],
+    answer:"エ",
+    explanation:"「気」には、①「心の感じ・気持ち・雰囲気」という意味と、②「エネルギー・自然の力」という意味があります。\nア「気分」は体や心の感じ（①）。イ「気持ち」はうれしい・悲しいなどの心の感覚（①）。ウ「気配」は音や姿は見えないけど何かを感じること（①）。\nしかしエ「電気」は照明やテレビを動かすエネルギーのことで（②）、心の感じとは全くちがう意味なので、エだけちがいます。"
+  },
+  {
+    id:"q005", kanji:"正",
+    question:"次のア〜エの熟語の中から、「正」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"正直"},{label:"イ",word:"正解"},{label:"ウ",word:"正門"},{label:"エ",word:"正義"}],
+    answer:"ウ",
+    explanation:"「正」には、①「正しい・まちがいのない・きちんとした」という意味と、②「表側・メインの」という場所の意味があります。\nア「正直」はうそをつかず話すこと（①）。イ「正解」は答えがぴったり合っていること（①）。エ「正義」は人としてフェアで正しいこと（①）。\nしかしウ「正門」は建物の表側にある入り口のこと（②）。正しいという意味ではなく「表側の入口」を表しているので、ウだけちがいます。"
+  },
+  {
+    id:"q006", kanji:"発",
+    question:"次のア〜エの熟語の中から、「発」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"発見"},{label:"イ",word:"発明"},{label:"ウ",word:"発車"},{label:"エ",word:"発表"}],
+    answer:"ウ",
+    explanation:"「発」には、①「新しく何かをする・外に出す・広める」という意味と、②「出発する・動き出す」という意味があります。\nア「発見」は新しいものを見つけること（①）。イ「発明」は新しいものを作り出すこと（①）。エ「発表」は意見や結果を外に向けて伝えること（①）。\nしかしウ「発車」は電車やバスが動き出すこと（②）。「乗り物が出発する」という意味なので、ウだけちがいます。"
+  },
+  {
+    id:"q007", kanji:"道",
+    question:"次のア〜エの熟語の中から、「道」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"道路"},{label:"イ",word:"近道"},{label:"ウ",word:"道順"},{label:"エ",word:"書道"}],
+    answer:"エ",
+    explanation:"「道」には、①「通る場所・ルート」という実際に歩く道の意味と、②「習い事・やり方」という技術や方法の意味があります。\nア「道路」は車や人が通る場所（①）。イ「近道」はより短いルートのこと（①）。ウ「道順」は目的地までの順番・ルート（①）。\nしかしエ「書道」は毛筆で文字を書く習い事のこと（②）。実際に歩く道ではなく「習い事」を表しているので、エだけちがいます。"
+  },
+  {
+    id:"q008", kanji:"開",
+    question:"次のア〜エの熟語の中から、「開」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"開会"},{label:"イ",word:"開始"},{label:"ウ",word:"開店"},{label:"エ",word:"公開"}],
+    answer:"エ",
+    explanation:"「開」には、①「始まる・スタートする」という意味と、②「広げる・みんなに見せる・オープンにする」という意味があります。\nア「開会」は会が始まること（①）。イ「開始」は物事がスタートすること（①）。ウ「開店」はお店が営業を始めること（①）。\nしかしエ「公開」はみんなに広く見せること（②）。何かが始まるのではなく「みんなに公にする」という意味なので、エだけちがいます。"
+  },
+  {
+    id:"q009", kanji:"平",
+    question:"次のア〜エの熟語の中から、「平」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"平和"},{label:"イ",word:"平静"},{label:"ウ",word:"平行"},{label:"エ",word:"平気"}],
+    answer:"ウ",
+    explanation:"「平」には、①「おだやか・落ち着いている・ふつう」という気持ちや状態の意味と、②「水平・フラット・同じ高さ」という形の意味があります。\nア「平和」はおだやかで争いのない状態（①）。イ「平静」は落ち着いて冷静な様子（①）。エ「平気」はびくともしない・気にしない様子（①）。\nしかしウ「平行」は2本の線が同じ距離を保って並ぶこと（②）。気持ちの状態ではなく「形・位置関係」を表しているので、ウだけちがいます。"
+  },
+  {
+    id:"q010", kanji:"力",
+    question:"次のア〜エの熟語の中から、「力」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"力作"},{label:"イ",word:"力持ち"},{label:"ウ",word:"力強い"},{label:"エ",word:"協力"}],
+    answer:"エ",
+    explanation:"「力」には、①「体や心の強さ・パワー」という意味と、②「力を合わせる・助ける」という意味があります。\nア「力作」は力を込めて作った作品のこと（①）。イ「力持ち」は体の力がとても強い人（①）。ウ「力強い」はパワーがある・たくましい様子（①）。\nしかしエ「協力」はみんなで力を合わせること（②）。自分自身の力の強さではなく「力を合わせる」という意味なので、エだけちがいます。"
+  },
+  {
+    id:"q011", kanji:"不",
+    question:"次のア〜エの熟語の中から、「不」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"不安"},{label:"イ",word:"不満"},{label:"ウ",word:"不思議"},{label:"エ",word:"不正"}],
+    answer:"エ",
+    explanation:"「不」はどれも「〜でない・〜がない」という意味ですが、使われ方がちがいます。\nア「不安」は安心できない気持ち（マイナスの気持ち）。イ「不満」は満足できていない気持ち（マイナスの気持ち）。ウ「不思議」はどうしてか分からない感じ（マイナスの状態）。\nしかしエ「不正」はルールやきまりに違反した行動のこと。気持ちではなく「行動のまちがい」を表しているので、エだけちがいます。"
+  },
+  {
+    id:"q012", kanji:"高",
+    question:"次のア〜エの熟語の中から、「高」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"高原"},{label:"イ",word:"高山"},{label:"ウ",word:"高地"},{label:"エ",word:"高速"}],
+    answer:"エ",
+    explanation:"「高」には、①「高い場所・海抜が高い」という場所の意味と、②「速さ・レベルが大きい」という程度の意味があります。\nア「高原」は高い場所にある広い平地（①）。イ「高山」は高くそびえる山（①）。ウ「高地」は海抜が高い土地（①）。\nしかしエ「高速」はとても速いスピードのこと（②）。場所が高いのではなく「速さが大きい」という意味なので、エだけちがいます。"
+  },
+  {
+    id:"q013", kanji:"手",
+    question:"次のア〜エの熟語の中から、「手」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"手紙"},{label:"イ",word:"手首"},{label:"ウ",word:"手品"},{label:"エ",word:"手続き"}],
+    answer:"イ",
+    explanation:"「手」には、①「やり方・方法・手段」という意味と、②「体の一部としての手そのもの」という意味があります。\nア「手紙」は人に気持ちや用件を伝えるための文書（①のなごり）。ウ「手品」は不思議なわざを見せる芸のこと（①）。エ「手続き」は物事を進めるための決まったやり方・順番（①）。\nしかしイ「手首」は手と腕のつなぎ目の体の部分（②）。やり方ではなく「体の部分」を表しているので、イだけちがいます。"
+  },
+  {
+    id:"q014", kanji:"白",
+    question:"次のア〜エの熟語の中から、「白」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"白紙"},{label:"イ",word:"白雪"},{label:"ウ",word:"白鳥"},{label:"エ",word:"告白"}],
+    answer:"エ",
+    explanation:"「白」には、①「白い色・白いもの」という色の意味と、②「はっきり言う・打ち明ける」という意味があります。\nア「白紙」は白い紙のこと（①）。イ「白雪」は白い雪のこと（①）。ウ「白鳥」は白い鳥のこと（①）。\nしかしエ「告白」は心の中にある気持ちを打ち明けること（②）。白い色とは関係なく「言葉で伝える」という意味なので、エだけちがいます。"
+  },
+  {
+    id:"q015", kanji:"空",
+    question:"次のア〜エの熟語の中から、「空」の字が他と異なる意味を持つものを一つ選びなさい。",
+    choices:[{label:"ア",word:"空白"},{label:"イ",word:"空席"},{label:"ウ",word:"空腹"},{label:"エ",word:"青空"}],
+    answer:"エ",
+    explanation:"「空」には、①「からっぽ・何も入っていない」という意味と、②「空（そら）・上の方」という場所の意味があります。\nア「空白」は何も書かれていないスペース（①）。イ「空席」はだれも座っていない席（①）。ウ「空腹」はお腹がすいている状態（①）。\nしかしエ「青空」は青く晴れ渡ったそら（②）。からっぽという意味ではなく「そら」を表しているので、エだけちがいます。"
+  }
+];
+
+// ============================================================
+// ストック管理（Google Drive と同期）
+// ============================================================
+let stockedIds = new Set();
+
+function setSyncStatus(msg, type) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.className = 'sync-status' + (type ? ' ' + type : '');
+}
+
+async function loadStock() {
+  try {
+    setSyncStatus('ストックを読み込み中…');
+    const res = await fetch(GAS_URL + '&action=load');
+    const text = await res.text();
+    const arr = JSON.parse(text);
+    stockedIds = new Set(arr);
+    setSyncStatus('✓ ストックを読み込みました', 'ok');
+    document.getElementById('stockCount').textContent = stockedIds.size;
+    setTimeout(() => setSyncStatus(''), 2000);
+  } catch(e) {
+    setSyncStatus('ストックの読み込みに失敗しました（オフライン？）', 'err');
+    stockedIds = new Set();
+  }
+}
+
+async function saveStock() {
+  document.getElementById('stockCount').textContent = stockedIds.size;
+  try {
+    const data = JSON.stringify([...stockedIds]);
+    await fetch(GAS_URL + '&action=save&data=' + encodeURIComponent(data));
+    setSyncStatus('✓ ストックを保存しました', 'ok');
+    setTimeout(() => setSyncStatus(''), 2000);
+  } catch(e) {
+    setSyncStatus('保存に失敗しました（オフライン？）', 'err');
+  }
+}
+
+// ============================================================
+// クイズ本体
+// ============================================================
+const TOTAL = 5;
+let mode = 'home';
+let questions = [];
+let current = 0;
+let score = 0;
+let answered = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function render(html) { document.getElementById('root').innerHTML = html; }
+
+function goHome() { mode = 'home'; renderHome(); }
+
+function renderHome() {
+  const stockCount = stockedIds.size;
+  const disabledClass = stockCount === 0 ? 'disabled' : '';
+  const disabledAttr  = stockCount === 0 ? '' : 'onclick="startReview()"';
+  render(`
+    <div class="mode-screen">
+      <div class="mode-label">モードをえらぶ</div>
+      <div class="mode-card" onclick="startNormal()">
+        <div class="mode-icon normal">📖</div>
+        <div class="mode-info">
+          <div class="mode-name">通常モード</div>
+          <div class="mode-desc">問題からランダムに5問出題します</div>
+        </div>
+      </div>
+      <div class="mode-card ${disabledClass}" ${disabledAttr}>
+        <div class="mode-icon review">📌</div>
+        <div class="mode-info">
+          <div class="mode-name">復習モード</div>
+          <div class="mode-desc">ストックした問題（${stockCount}問）を練習します</div>
+        </div>
+      </div>
+      ${stockCount === 0 ? '<p class="empty-hint">間違えた問題や「もう一度やりたい」問題がここに集まります</p>' : ''}
+    </div>
+  `);
+}
+
+function startNormal() {
+  mode = 'normal';
+  questions = shuffle(ALL_QUESTIONS).slice(0, TOTAL);
+  current = 0; score = 0; answered = false;
+  renderQuestion();
+}
+
+function startReview() {
+  mode = 'review';
+  const stockedQs = ALL_QUESTIONS.filter(q => stockedIds.has(q.id));
+  questions = shuffle(stockedQs).slice(0, Math.min(TOTAL, stockedQs.length));
+  current = 0; score = 0; answered = false;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  const pct = Math.round((current / questions.length) * 100);
+  const modeLabel = mode === 'review' ? '復習モード' : '通常モード';
+  const fillClass = mode === 'review' ? 'review' : '';
+  const choicesHtml = q.choices.map(c =>
+    `<button class="choice-btn" onclick="selectAnswer('${c.label}')">
+      <span class="choice-mark">${c.label}</span>
+      <span>${c.word}</span>
+    </button>`
+  ).join('');
+  render(`
+    <div class="progress-wrap">
+      <div class="progress-row">
+        <span class="progress-mode">${modeLabel}</span>
+        <span class="progress-count">${current+1} / ${questions.length}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${pct}%"></div></div>
+    </div>
+    <div class="question-card">
+      <span class="kanji-pill">「${q.kanji}」の意味</span>
+      <p class="question-text">${q.question}</p>
+    </div>
+    <div class="choices">${choicesHtml}</div>
+    <div id="result"></div>
+  `);
+}
+
+function selectAnswer(label) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  const isCorrect = label === q.answer;
+  if (isCorrect) score++;
+
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.disabled = true;
+    const bl = btn.querySelector('.choice-mark').textContent;
+    if (bl === q.answer) btn.classList.add(isCorrect && bl === label ? 'correct' : 'reveal');
+    if (bl === label && !isCorrect) btn.classList.add('wrong');
+  });
+
+  if (!isCorrect) { stockedIds.add(q.id); saveStock(); }
+
+  const isStocked = stockedIds.has(q.id);
+  const isLast = current === questions.length - 1;
+  const boxClass = isCorrect ? 'correct-box' : 'wrong-box';
+  const titleText = isCorrect ? '✓ 正解！' : `✗ まちがい　正解は「${q.answer}」`;
+  const exp = q.explanation.replace(/\n/g, '<br>');
+
+  const stockBtn = isStocked
+    ? `<button class="btn-unstock" onclick="toggleStock('${q.id}', false)">📌 ストックから外す</button>`
+    : `<button class="btn-stock"   onclick="toggleStock('${q.id}', true)">📌 もう一度やりたい（ストックに追加）</button>`;
+
+  document.getElementById('result').innerHTML = `
+    <div class="result-box ${boxClass}">
+      <div class="result-title">${titleText}</div>
+      ${exp}
+    </div>
+    <div class="action-row">
+      ${stockBtn}
+      <button class="btn-primary" onclick="${isLast ? 'showScore()' : 'nextQuestion()'}">${isLast ? '結果を見る' : `次の問題へ　(${current+2}/${questions.length})`}</button>
+    </div>
+  `;
+}
+
+function toggleStock(id, add) {
+  if (add) stockedIds.add(id); else stockedIds.delete(id);
+  saveStock();
+  const btn = document.querySelector('.btn-stock, .btn-unstock');
+  if (!btn) return;
+  if (add) {
+    btn.className = 'btn-unstock';
+    btn.textContent = '📌 ストックから外す';
+    btn.setAttribute('onclick', `toggleStock('${id}', false)`);
+  } else {
+    btn.className = 'btn-stock';
+    btn.textContent = '📌 もう一度やりたい（ストックに追加）';
+    btn.setAttribute('onclick', `toggleStock('${id}', true)`);
+  }
+}
+
+function nextQuestion() { current++; renderQuestion(); }
+
+function showScore() {
+  const pct = Math.round(score / questions.length * 100);
+  const msg = pct===100 ? 'かんぺき！全問正解！'
+    : pct>=80 ? 'すごい！よくできました！'
+    : pct>=60 ? 'がんばりました！あと少し！'
+    : 'また練習しよう！きっとできるよ！';
+
+  const stockedQs = ALL_QUESTIONS.filter(q => stockedIds.has(q.id));
+  const stockListHtml = stockedQs.length === 0
+    ? '<div class="empty-stock">ストックはありません</div>'
+    : stockedQs.map(q => `
+        <div class="stock-list-item">
+          <span class="stock-item-kanji">「${q.kanji}」</span>
+          <span class="stock-item-words">${q.choices.map(c=>c.word).join('・')}</span>
+          <button class="btn-remove-stock" onclick="removeFromStock('${q.id}')">外す</button>
+        </div>`).join('');
+
+  render(`
+    <div class="score-screen">
+      <div class="score-number">${score}</div>
+      <div class="score-denom">/ ${questions.length}問正解</div>
+      <div class="score-msg">${msg}</div>
+      <div class="action-row">
+        ${stockedIds.size > 0 ? `<button class="btn-primary" onclick="startReview()">📌 ストックした問題を復習する（${stockedIds.size}問）</button>` : ''}
+        <button class="btn-secondary" onclick="startNormal()">通常モードで続ける</button>
+        <button class="btn-secondary" onclick="goHome()">トップにもどる</button>
+      </div>
+    </div>
+    <div>
+      <div class="score-sub-title">📌 ストック中の問題</div>
+      ${stockListHtml}
+    </div>
+  `);
+}
+
+function removeFromStock(id) {
+  stockedIds.delete(id);
+  saveStock();
+  showScore();
+}
+
+// 起動時にストックを読み込む
+render('<div class="loading-screen"><div class="spinner"></div><br>読み込み中…</div>');
+loadStock().then(() => renderHome());
+</script>
+</body>
+</html>
